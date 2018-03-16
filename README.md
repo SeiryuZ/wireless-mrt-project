@@ -15,29 +15,11 @@ A mobile application that can aid the user in finding transportation.
 
 #### Application skeleton mockup
 
-Live Map
-![Live Map](https://github.com/christopher97/wireless-mrt-project/blob/master/images/Live%20Map.png)
+Mockup1:
+![Mockup1](https://github.com/christopher97/wireless-mrt-project/blob/master/images/mockup1.PNG)
 
-Nearby
-![Nearby](https://github.com/christopher97/wireless-mrt-project/blob/master/images/Nearby.png)
-
-Travel
-![Travel](https://github.com/christopher97/wireless-mrt-project/blob/master/images/Travel.png)
-
-Station Detail
-![Station Detail](https://github.com/christopher97/wireless-mrt-project/blob/master/images/Station%20Detail.png)
-
-Sidebar
-![Sidebar](https://github.com/christopher97/wireless-mrt-project/blob/master/images/SideBar.png)
-
-Driver Login
-![Driver Login](https://github.com/christopher97/wireless-mrt-project/blob/master/images/Driver%20Login.png)
-
-Driver Train Data Input
-![Train Data](https://github.com/christopher97/wireless-mrt-project/blob/master/images/Driver%20Train%20Data.png)
-
-Driver Dashboard
-![Dashboard](https://github.com/christopher97/wireless-mrt-project/blob/master/images/Driver%20Dashboard.png)
+Mockup2:
+![Mockup2](https://github.com/christopher97/wireless-mrt-project/blob/master/images/mockup2.PNG)
 
 ## Core Features:
 
