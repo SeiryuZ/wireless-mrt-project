@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -25,26 +26,97 @@ import java.sql.Driver;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.example.dhyatmika.fp_layout.Helper;
+
 public class DriverActivity extends AppCompatActivity {
+
+    private Context getContext() {
+        return DriverActivity.this.getApplicationContext();
+    }
+
+    private SharedPreferences getPreference() {
+        return Helper.getPreference(this.getContext());
+    }
+
+    private String getToken() {
+        return Helper.getToken(this.getContext());
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver);
 
-        SharedPreferences preference = getSharedPreferences("LOGIN_CREDENTIALS", Context.MODE_PRIVATE);
-        if (preference.getString("token", "").equals("")) {
+        String token = this.getToken();
+        if (token.equals("")) {
             Intent intent = new Intent(this, LoginActivity.class);
             startActivity(intent);
         }
+
+        checkTokenValidity();
+    }
+
+    private void checkTokenValidity() {
+
+        // get token
+        String token = this.getToken();
+        String url = AppConfig.getValidate(token);
+
+        JsonObjectRequest jsObjRequest = new JsonObjectRequest
+                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+
+                    // if response is HTTP 200 OK
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            String message = response.getString("message");
+                            Log.v("message", message);
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+
+                    // stuff to do when server returned an error
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+
+                        // For now just parse the response body
+                        NetworkResponse response = error.networkResponse;
+                        int responseCode = response.statusCode;
+
+                        Helper.toastLong(DriverActivity.this, "Token Expired");
+
+                        SharedPreferences pref = getPreference();
+                        SharedPreferences.Editor editor = pref.edit();
+
+                        editor.remove("token");
+                        editor.commit();
+
+                        Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
+                        startActivity(intent);
+                    }
+                }) {
+
+                @Override
+                public Map<String, String> getHeaders() throws AuthFailureError {
+                    String token = getToken();
+
+                    HashMap<String, String> headers = new HashMap<String, String>();
+                    headers.put("Authorization", "token " + token);
+                    return headers;
+                }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+        queue.add(jsObjRequest);
     }
 
     public void logout(View view) {
 
-        // get token for logging out
-        SharedPreferences preference = getSharedPreferences("LOGIN_CREDENTIALS", Context.MODE_PRIVATE);
-        String token = preference.getString("token", "");
-
+        // get token and URL for logging out
+        String token = getToken();
         String url = AppConfig.getLogout(token);
 
         // make request to logout
@@ -55,13 +127,17 @@ public class DriverActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(JSONObject response) {
                         try {
+                            Log.v("message", response.toString());
+
                             String message = response.getString("message");
 
-                            SharedPreferences pref = getSharedPreferences("LOGIN_CREDENTIALS", Context.MODE_PRIVATE);
+                            SharedPreferences pref = getPreference();
                             SharedPreferences.Editor editor = pref.edit();
 
                             editor.remove("token");
                             editor.commit();
+
+                            Helper.toastLong(DriverActivity.this, "You have logged out.");
 
                             Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
                             startActivity(intent);
@@ -77,18 +153,33 @@ public class DriverActivity extends AppCompatActivity {
 
                         // For now just parse the response body
                         NetworkResponse response = error.networkResponse;
-                        String errorBody = new String(response.data);
+                        int responseCode = response.statusCode;
 
-                        // and show the error to the user directly using toast
-                        Toast toast = Toast.makeText(DriverActivity.this, errorBody, Toast.LENGTH_LONG);
-                        toast.show();
+                        // if token has expired
+                        if (responseCode == AppConfig.isUnauthorized()) {
+
+                            Helper.toastLong(DriverActivity.this, "Token Expired");
+
+                            SharedPreferences pref = getPreference();
+                            SharedPreferences.Editor editor = pref.edit();
+
+                            editor.remove("token");
+                            editor.commit();
+
+                            Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
+                            startActivity(intent);
+                        } else {
+                            String errorBody = new String(response.data);
+
+                            // and show the error to the user directly using toast
+                            Helper.toastLong(DriverActivity.this, errorBody);
+                        }
                     }
                 }) {
 
                     @Override
                     public Map<String, String> getHeaders() throws AuthFailureError {
-                        SharedPreferences preference = getSharedPreferences("LOGIN_CREDENTIALS", Context.MODE_PRIVATE);
-                        String token = preference.getString("token", "");
+                        String token = getToken();
 
                         HashMap<String, String> headers = new HashMap<String, String>();
                         headers.put("Authorization", "token " + token);
