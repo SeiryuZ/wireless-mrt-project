@@ -4,23 +4,31 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 public class NearbyMap extends FragmentActivity implements OnMapReadyCallback {
 
+
     private GoogleMap mMap;
     private Location locGPS;
+    private Marker marker;
+    private LocationManager locationManager;
+    private LocationListener locationListener;
     private int PERMISSION_ACCESS_LOC;
 
 
@@ -32,20 +40,64 @@ public class NearbyMap extends FragmentActivity implements OnMapReadyCallback {
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.mapFrag);
         mapFragment.getMapAsync(this);
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},PERMISSION_ACCESS_LOC);
+        boolean fineLocPermision = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        boolean coarseLocPermision = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+
+        if(!fineLocPermision){
+            Log.v("TEST", "NO PERMISSION FOR LOCATION, ATTEMPT REQUEST");
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    1
+            );
+            return;
         }
+
+        if(!coarseLocPermision){
+            Log.v("TEST", "NO PERMISSION FOR LOCATION, ATTEMPT REQUEST");
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                    1
+            );
+            return;
+        }
+
+        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         locGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        locationListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                if(mMap != null){
+                    Log.i("TEST", "GET LOCATION");
+                    LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
+                    CameraPosition cameraPosition = new CameraPosition.Builder().target(loc).zoom(17).build();
+                    if(marker != null){
+                        marker.remove();
+                    }
+                    marker = mMap.addMarker(new MarkerOptions().title("You Are Here").position(loc));
+                    mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                }
+            }
+
+            @Override
+            public void onStatusChanged(String s, int i, Bundle bundle) {
+
+            }
+
+            @Override
+            public void onProviderEnabled(String s) {
+
+            }
+
+            @Override
+            public void onProviderDisabled(String s) {
+
+            }
+        };
+
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, locationListener);
     }
 
 
@@ -65,7 +117,8 @@ public class NearbyMap extends FragmentActivity implements OnMapReadyCallback {
         // Add a marker in Sydney and move the camera
         LatLng userLoc = new LatLng(locGPS.getLatitude(), locGPS.getLongitude());
         mMap.addMarker(new MarkerOptions().position(userLoc).title("You Are Here"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(userLoc));
+        CameraPosition cameraPosition = new CameraPosition.Builder().target(userLoc).zoom(17).build();
+        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
     }
 
     public void getLocation(View view) {

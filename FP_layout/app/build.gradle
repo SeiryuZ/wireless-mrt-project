@@ -1,8 +1,9 @@
-apply plugin: 'com.android.application'
+    apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 26
     defaultConfig {
+        multiDexEnabled true
         applicationId "com.example.dhyatmika.fp_layout"
         minSdkVersion 22
         targetSdkVersion 26
