@@ -3,10 +3,15 @@ package com.example.dhyatmika.fp_layout;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
@@ -21,14 +26,16 @@ import com.android.volley.toolbox.Volley;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.sql.Driver;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.example.dhyatmika.fp_layout.Helper;
 
-public class DriverActivity extends AppCompatActivity {
+public class DriverActivity extends AppCompatActivity implements SensorEventListener{
 
     private Context getContext() {
         return DriverActivity.this.getApplicationContext();
@@ -42,6 +49,12 @@ public class DriverActivity extends AppCompatActivity {
         return Helper.getToken(this.getContext());
     }
 
+    private SensorManager mSensorManager;
+
+    private Sensor accelerometer;
+
+    private boolean switcher = true;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,6 +67,14 @@ public class DriverActivity extends AppCompatActivity {
         }
 
         checkTokenValidity();
+
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+        accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        if(accelerometer == null){
+            //do something
+        }
     }
 
     private void checkTokenValidity() {
@@ -84,7 +105,7 @@ public class DriverActivity extends AppCompatActivity {
 
                         // For now just parse the response body
                         NetworkResponse response = error.networkResponse;
-                        int responseCode = response.statusCode;
+                        //int responseCode = response.statusCode;
 
                         Helper.toastLong(DriverActivity.this, "Token Expired");
 
@@ -190,5 +211,44 @@ public class DriverActivity extends AppCompatActivity {
         // add our request to the queue
         RequestQueue queue = Volley.newRequestQueue(this);
         queue.add(jsObjRequest);
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+        int accelerationX = (int)sensorEvent.values[0];
+        int accelerationZ = (int)sensorEvent.values[1];
+
+        int accelTotal = (int)Math.pow((Math.pow(accelerationX, 2) + Math.pow(accelerationZ, 2)), 0.5);
+
+        Log.i("Test", Integer.toString(accelerationX));
+        Log.i("Test", Integer.toString(accelerationZ));
+
+        TextView indicator = (TextView)findViewById(R.id.TestIndicator);
+
+        if(accelTotal > 2){
+            if(switcher){
+                indicator.setText("Departing");
+            }else{
+                indicator.setText("Arriving");
+            }
+            switcher = !switcher;
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mSensorManager.unregisterListener(this);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
     }
 }
