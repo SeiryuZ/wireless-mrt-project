@@ -11,6 +11,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -54,6 +55,11 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
     private Sensor accelerometer;
 
     private boolean switcher = true;
+    private boolean startStopSwitcher = true;
+    private boolean firstPress = true;
+    private boolean change = true;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,8 +75,6 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
         checkTokenValidity();
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-
-        accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         if(accelerometer == null){
             //do something
@@ -224,14 +228,27 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
         Log.i("Test", Integer.toString(accelerationZ));
 
         TextView indicator = (TextView)findViewById(R.id.TestIndicator);
+        TextView AccelTest = (TextView)findViewById(R.id.AccelerationTest);
 
-        if(accelTotal > 2){
+        AccelTest.setText(Integer.toString(accelTotal));
+
+        if(accelTotal >= 1 && change){
             if(switcher){
                 indicator.setText("Departing");
             }else{
                 indicator.setText("Arriving");
             }
             switcher = !switcher;
+            change = false;
+        }
+
+        if(accelTotal == 0){
+            if(switcher){
+                indicator.setText("Idle");
+            }else{
+                indicator.setText("Moving");
+            }
+            change = true;
         }
     }
 
@@ -250,5 +267,24 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
     public void onResume() {
         super.onResume();
         mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    public void toggleSensor(View view) {
+        Button startStopButton = (Button)findViewById(R.id.stopStartSensor);
+        if(startStopSwitcher){
+            if(firstPress){
+                accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+                mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+                firstPress = false;
+            }else{
+                mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+            }
+            startStopButton.setText("Stop");
+        }else {
+            mSensorManager.unregisterListener(this);
+            startStopButton.setText("Start");
+        }
+
+        startStopSwitcher = !startStopSwitcher;
     }
 }
