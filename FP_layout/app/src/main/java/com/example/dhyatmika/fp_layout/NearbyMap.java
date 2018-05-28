@@ -2,6 +2,8 @@ package com.example.dhyatmika.fp_layout;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
@@ -12,6 +14,14 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
+import com.android.volley.NetworkResponse;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -21,6 +31,9 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class NearbyMap extends FragmentActivity implements OnMapReadyCallback {
 
 
@@ -29,6 +42,8 @@ public class NearbyMap extends FragmentActivity implements OnMapReadyCallback {
     private Marker marker;
     private LocationManager locationManager;
     private LocationListener locationListener;
+    private double lat;
+    private double lon;
     private int PERMISSION_ACCESS_LOC;
 
 
@@ -70,14 +85,18 @@ public class NearbyMap extends FragmentActivity implements OnMapReadyCallback {
             @Override
             public void onLocationChanged(Location location) {
                 if(mMap != null){
-                    Log.i("TEST", "GET LOCATION");
-                    LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-                    CameraPosition cameraPosition = new CameraPosition.Builder().target(loc).zoom(17).build();
+
+                    //Log.i("TEST", "GET LOCATION");
+                    lat = location.getLatitude();
+                    lon = location.getLongitude();
+                    LatLng loc = new LatLng(lat, lon);
+
                     if(marker != null){
+                        //Log.i("TEST", "REMOVE MARKER");
                         marker.remove();
                     }
                     marker = mMap.addMarker(new MarkerOptions().title("You Are Here").position(loc));
-                    mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
                 }
             }
 
@@ -116,13 +135,59 @@ public class NearbyMap extends FragmentActivity implements OnMapReadyCallback {
 
         // Add a marker in Sydney and move the camera
         LatLng userLoc = new LatLng(locGPS.getLatitude(), locGPS.getLongitude());
-        mMap.addMarker(new MarkerOptions().position(userLoc).title("You Are Here"));
+        marker = mMap.addMarker(new MarkerOptions().position(userLoc).title("You Are Here"));
         CameraPosition cameraPosition = new CameraPosition.Builder().target(userLoc).zoom(17).build();
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
     }
 
+
+
     public void getLocation(View view) {
+        // Instantiate the RequestQueue.
+//    RequestQueue queue = Volley.newRequestQueue(this);
+        String url ="http://christopherlychealdo.me/api/nearby?lat="+Double.toString(lat)+"&long="+Double.toString(lon);
 
+        JsonObjectRequest jsObjRequest = new JsonObjectRequest
+                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
 
+                    // if response is HTTP 200 OK
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+
+                            JSONObject result = response.getJSONObject("station");
+                            double stationLat = result.getDouble("lat");
+                            double stationLong = result.getDouble("long");
+                            String stationName = result.getString("name");
+
+                            //Log.i("TEST", Double.toString(stationLat)+", "+Double.toString(stationLat));
+
+                            LatLng stationLoc = new LatLng(stationLat, stationLong);
+                            mMap.addMarker(new MarkerOptions().position(stationLoc).title(stationName));
+
+                            CameraPosition cameraPosition = new CameraPosition.Builder().target(stationLoc).zoom(17).build();
+                            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        } catch (Exception e){
+                            e.printStackTrace();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+
+                    // stuff to do when server returned an error
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.i("TEST", "ERROR");
+                    }
+                });
+        RequestQueue queue = Volley.newRequestQueue(this);
+        queue.add(jsObjRequest);
+    }
+
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
+        locationManager.removeUpdates(locationListener);
     }
 }
