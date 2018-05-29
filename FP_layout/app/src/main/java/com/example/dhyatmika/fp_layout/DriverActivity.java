@@ -13,28 +13,14 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
-import java.sql.Driver;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import com.example.dhyatmika.fp_layout.Helper;
 
 public class DriverActivity extends AppCompatActivity implements SensorEventListener{
 
@@ -59,6 +45,8 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
     private boolean firstPress = true;
     private boolean change = true;
 
+    private Context mContext;
+
 
 
     @Override
@@ -66,6 +54,7 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver);
 
+        mContext = getApplicationContext();
         String token = this.getToken();
         if (token.equals("")) {
             Intent intent = new Intent(this, LoginActivity.class);
@@ -87,55 +76,47 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
         String token = this.getToken();
         String url = AppConfig.getValidate(token);
 
-        JsonObjectRequest jsObjRequest = new JsonObjectRequest
-                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+        Helper.MakeJsonObjectRequest(mContext, Request.Method.GET, url, null, new VolleyResponseCallback() {
 
-                    // if response is HTTP 200 OK
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            String message = response.getString("message");
-                            Log.v("message", message);
+            @Override
+            public void onError(VolleyError error) {
 
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }, new Response.ErrorListener() {
+                // For now just parse the response body
+                NetworkResponse response = error.networkResponse;
+                //int responseCode = response.statusCode;
 
-                    // stuff to do when server returned an error
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
+                Helper.toastLong(DriverActivity.this, "Token Expired");
 
-                        // For now just parse the response body
-                        NetworkResponse response = error.networkResponse;
-                        //int responseCode = response.statusCode;
+                SharedPreferences pref = getPreference();
+                SharedPreferences.Editor editor = pref.edit();
 
-                        Helper.toastLong(DriverActivity.this, "Token Expired");
+                editor.remove("token");
+                editor.commit();
 
-                        SharedPreferences pref = getPreference();
-                        SharedPreferences.Editor editor = pref.edit();
+                Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
+                startActivity(intent);
+            }
 
-                        editor.remove("token");
-                        editor.commit();
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    String message = response.getString("message");
+                    Log.v("message", message);
 
-                        Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
-                        startActivity(intent);
-                    }
-                }) {
-
-                @Override
-                public Map<String, String> getHeaders() throws AuthFailureError {
-                    String token = getToken();
-
-                    HashMap<String, String> headers = new HashMap<String, String>();
-                    headers.put("Authorization", "token " + token);
-                    return headers;
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
-        };
+            }
 
-        RequestQueue queue = Volley.newRequestQueue(this);
-        queue.add(jsObjRequest);
+            @Override
+            public HashMap<String, String> setHeaders() {
+                String token = getToken();
+
+                HashMap<String, String> headers = new HashMap<String, String>();
+                headers.put("Authorization", "token " + token);
+                return headers;
+            }
+        });
     }
 
     public void logout(View view) {
@@ -145,76 +126,66 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
         String url = AppConfig.getLogout(token);
 
         // make request to logout
-        JsonObjectRequest jsObjRequest = new JsonObjectRequest
-                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+        Helper.MakeJsonObjectRequest(mContext, Request.Method.GET, url, null, new VolleyResponseCallback() {
+            @Override
+            public void onError(VolleyError error) {
 
-                    // if response is HTTP 200 OK
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            Log.v("message", response.toString());
+                // For now just parse the response body
+                NetworkResponse response = error.networkResponse;
+                int responseCode = response.statusCode;
 
-                            String message = response.getString("message");
+                // if token has expired
+                if (responseCode == AppConfig.isUnauthorized()) {
 
-                            SharedPreferences pref = getPreference();
-                            SharedPreferences.Editor editor = pref.edit();
+                    Helper.toastLong(DriverActivity.this, "Token Expired");
 
-                            editor.remove("token");
-                            editor.commit();
+                    SharedPreferences pref = getPreference();
+                    SharedPreferences.Editor editor = pref.edit();
 
-                            Helper.toastLong(DriverActivity.this, "You have logged out.");
+                    editor.remove("token");
+                    editor.commit();
 
-                            Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
-                            startActivity(intent);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }, new Response.ErrorListener() {
+                    Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
+                    startActivity(intent);
+                } else {
+                    String errorBody = new String(response.data);
 
-                    // stuff to do when server returned an error
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
+                    // and show the error to the user directly using toast
+                    Helper.toastLong(DriverActivity.this, errorBody);
+                }
+            }
 
-                        // For now just parse the response body
-                        NetworkResponse response = error.networkResponse;
-                        int responseCode = response.statusCode;
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    Log.v("message", response.toString());
 
-                        // if token has expired
-                        if (responseCode == AppConfig.isUnauthorized()) {
+                    String message = response.getString("message");
 
-                            Helper.toastLong(DriverActivity.this, "Token Expired");
+                    SharedPreferences pref = getPreference();
+                    SharedPreferences.Editor editor = pref.edit();
 
-                            SharedPreferences pref = getPreference();
-                            SharedPreferences.Editor editor = pref.edit();
+                    editor.remove("token");
+                    editor.commit();
 
-                            editor.remove("token");
-                            editor.commit();
+                    Helper.toastLong(DriverActivity.this, "You have logged out.");
 
-                            Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
-                            startActivity(intent);
-                        } else {
-                            String errorBody = new String(response.data);
+                    Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
+                    startActivity(intent);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
 
-                            // and show the error to the user directly using toast
-                            Helper.toastLong(DriverActivity.this, errorBody);
-                        }
-                    }
-                }) {
+            @Override
+            public HashMap<String, String> setHeaders() {
+                String token = getToken();
 
-                    @Override
-                    public Map<String, String> getHeaders() throws AuthFailureError {
-                        String token = getToken();
-
-                        HashMap<String, String> headers = new HashMap<String, String>();
-                        headers.put("Authorization", "token " + token);
-                        return headers;
-                    }
-                };
-        // instantiate basic queue by volley
-        // add our request to the queue
-        RequestQueue queue = Volley.newRequestQueue(this);
-        queue.add(jsObjRequest);
+                HashMap<String, String> headers = new HashMap<String, String>();
+                headers.put("Authorization", "token " + token);
+                return headers;
+            }
+        });
     }
 
     @Override

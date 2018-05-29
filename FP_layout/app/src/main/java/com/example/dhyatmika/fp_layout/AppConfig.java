@@ -11,6 +11,7 @@ public final class AppConfig {
     private static final String logout = "logout";
     private static final String validate = "validate";
     private static final String stations = "stations";
+    private static final String nearby = "nearby";
     private static final int unauthorized = 401;
     private static final int empty = 204;
 
@@ -32,6 +33,12 @@ public final class AppConfig {
 
     public static String getStations() {
         return domain + stations;
+    }
+
+    public static String getNearby(Double lat, Double lon) {
+        String s1 = Double.toString(lat);
+        String s2 = Double.toString(lon);
+        return domain + nearby + "?lat=" + s1 + "&long=" + s2;
     }
 
     public static int isUnauthorized() {

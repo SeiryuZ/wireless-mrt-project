@@ -10,19 +10,13 @@ import android.widget.Toast;
 
 import com.android.volley.NetworkError;
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -35,10 +29,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 
 public class MapsActivity extends FragmentActivity implements
@@ -176,11 +167,7 @@ public class MapsActivity extends FragmentActivity implements
         // get name and additional data from Places API
 
         // place markers
-        int mWidth = 120;   // marker width
-        int mHeight = 120;  // marker height
-        BitmapDrawable bd = (BitmapDrawable) getResources().getDrawable(R.drawable.tgv_flat_03, null);
-        Bitmap bmp = bd.getBitmap();
-        Bitmap marker = Bitmap.createScaledBitmap(bmp, mWidth, mHeight, false);
+        Bitmap marker = Helper.customMarker(getResources());
 
         int stationCount = this.stations.size();
         for(int i=0; i<stationCount; i++) {

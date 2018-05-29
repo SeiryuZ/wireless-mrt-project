@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -22,10 +23,12 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.example.dhyatmika.fp_layout.models.Station;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -33,6 +36,8 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.HashMap;
 
 public class NearbyMap extends FragmentActivity implements OnMapReadyCallback {
 
@@ -45,12 +50,15 @@ public class NearbyMap extends FragmentActivity implements OnMapReadyCallback {
     private double lat;
     private double lon;
     private int PERMISSION_ACCESS_LOC;
+    private Context mContext;
+    private Station nearby;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_nearby_map);
+        mContext = getApplicationContext();
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.mapFrag);
@@ -144,45 +152,57 @@ public class NearbyMap extends FragmentActivity implements OnMapReadyCallback {
 
     public void getLocation(View view) {
         // Instantiate the RequestQueue.
-//    RequestQueue queue = Volley.newRequestQueue(this);
-        String url ="http://christopherlychealdo.me/api/nearby?lat="+Double.toString(lat)+"&long="+Double.toString(lon);
+        // RequestQueue queue = Volley.newRequestQueue(this);
+        String url = AppConfig.getNearby(lat, lon);
 
-        JsonObjectRequest jsObjRequest = new JsonObjectRequest
-                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+        Helper.MakeJsonObjectRequest(mContext, Request.Method.GET, url, null, new VolleyResponseCallback() {
+            @Override
+            public void onError(VolleyError error) {
+                Log.i("TEST", "ERROR");
+            }
 
-                    // if response is HTTP 200 OK
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
+            @Override
+            public void onResponse(JSONObject response) {
+                // if response is HTTP 200 OK
 
-                            JSONObject result = response.getJSONObject("station");
-                            double stationLat = result.getDouble("lat");
-                            double stationLong = result.getDouble("long");
-                            String stationName = result.getString("name");
+                try {
+                    JSONObject result = response.getJSONObject("station");
 
-                            //Log.i("TEST", Double.toString(stationLat)+", "+Double.toString(stationLat));
+                    Station station = new Station(
+                            result.getInt("id"),
+                            result.getString("name"),
+                            result.getDouble("lat"),
+                            result.getDouble("long")
+                    );
 
-                            LatLng stationLoc = new LatLng(stationLat, stationLong);
-                            mMap.addMarker(new MarkerOptions().position(stationLoc).title(stationName));
+                    onNearbyFound(station);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
 
-                            CameraPosition cameraPosition = new CameraPosition.Builder().target(stationLoc).zoom(17).build();
-                            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        } catch (Exception e){
-                            e.printStackTrace();
-                        }
-                    }
-                }, new Response.ErrorListener() {
+            @Override
+            public HashMap<String, String> setHeaders() {
+                return null;
+            }
+        });
+    }
 
-                    // stuff to do when server returned an error
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.i("TEST", "ERROR");
-                    }
-                });
-        RequestQueue queue = Volley.newRequestQueue(this);
-        queue.add(jsObjRequest);
+    private void onNearbyFound(Station station) {
+        this.nearby = station;
+
+        Bitmap marker = Helper.customMarker(getResources());
+        LatLng stationLoc = new LatLng(nearby.getLat(), nearby.getLon());
+
+        mMap.addMarker(new MarkerOptions()
+                .position(stationLoc)
+                .title(nearby.getName())
+                .icon(BitmapDescriptorFactory.fromBitmap(marker)));
+
+        CameraPosition cameraPosition = new CameraPosition.Builder().target(stationLoc).zoom(17).build();
+        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
     }
 
     @Override

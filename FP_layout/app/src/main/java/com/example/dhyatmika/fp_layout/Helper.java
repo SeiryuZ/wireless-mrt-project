@@ -2,6 +2,9 @@ package com.example.dhyatmika.fp_layout;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
@@ -86,5 +89,15 @@ public final class Helper {
         };
 
         VolleySingleton.getInstance(context).addToRequestQueue(jsObjRequest);
+    }
+
+    public static final Bitmap customMarker(Resources resources) {
+        int mWidth = 120;   // marker width
+        int mHeight = 120;  // marker height
+        BitmapDrawable bd = (BitmapDrawable) resources.getDrawable(R.drawable.train, null);
+        Bitmap bmp = bd.getBitmap();
+        Bitmap marker = Bitmap.createScaledBitmap(bmp, mWidth, mHeight, false);
+
+        return marker;
     }
 }
