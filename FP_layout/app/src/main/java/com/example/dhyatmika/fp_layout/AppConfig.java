@@ -10,6 +10,7 @@ public final class AppConfig {
     private static final String register = "register";
     private static final String logout = "logout";
     private static final String validate = "validate";
+    private static final String stations = "stations";
     private static final int unauthorized = 401;
     private static final int empty = 204;
 
@@ -27,6 +28,10 @@ public final class AppConfig {
 
     public static String getValidate(String token) {
         return domain + validate + "?token=" + token;
+    }
+
+    public static String getStations() {
+        return domain + stations;
     }
 
     public static int isUnauthorized() {

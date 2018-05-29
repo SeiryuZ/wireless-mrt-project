@@ -50,7 +50,8 @@
             android:label="@string/title_activity_directions_map" />
         <activity android:name=".SearchDirection" />
         <activity android:name=".LoginActivity" />
-        <activity android:name=".DriverActivity"></activity>
+        <activity android:name=".DriverActivity" />
+        <activity android:name=".StationActivity"></activity>
     </application>
 
 </manifest>
