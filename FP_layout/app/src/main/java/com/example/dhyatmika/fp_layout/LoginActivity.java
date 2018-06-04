@@ -12,10 +12,14 @@ import android.widget.Toast;
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
 import com.android.volley.VolleyError;
+import com.example.dhyatmika.fp_layout.helpers.AppConfig;
+import com.example.dhyatmika.fp_layout.helpers.Helper;
+import com.example.dhyatmika.fp_layout.helpers.VolleyResponseCallback;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.sql.Driver;
 import java.util.HashMap;
 
 public class LoginActivity extends AppCompatActivity {
@@ -41,8 +45,17 @@ public class LoginActivity extends AppCompatActivity {
         // and check whether we have token saved in or not
         SharedPreferences preference = getSharedPreferences("LOGIN_CREDENTIALS", Context.MODE_PRIVATE);
         if (preference.getString("token", "") != "") {
-            Intent intent = new Intent(this, DriverActivity.class);
-            startActivity(intent);
+            preference = getSharedPreferences("TRAIN", Context.MODE_PRIVATE);
+            if (preference.getInt("train_id", 0) != 0) {
+                Helper.toast(mContext, "Welcome Back", 0);
+                Intent intent = new Intent(this, DriverActivity.class);
+                startActivity(intent);
+            } else {
+                Helper.toast(mContext, "Please enter Train ID to continue", 0);
+                Intent intent = new Intent(this, ChooseTrainActivity.class);
+                startActivity(intent);
+            }
+            finish();
         }
     }
 
@@ -98,8 +111,26 @@ public class LoginActivity extends AppCompatActivity {
                     toast.show();
 
                     // Login successful, so we can move to different page
-                    Intent intent = new Intent(LoginActivity.this, DriverActivity.class);
-                    startActivity(intent);
+
+                    if (response.isNull("train")) {
+                        Intent intent = new Intent(LoginActivity.this, ChooseTrainActivity.class);
+                        startActivity(intent);
+                    } else {
+                        JSONObject train = response.getJSONObject("train");
+                        int trainID = train.getInt("id");
+
+                        // Get shared preference object, and get the editor object
+                        // And store relevant information
+                        preferences = getSharedPreferences("TRAIN", Context.MODE_PRIVATE);
+                        editor = preferences.edit();
+
+                        editor.putInt("train_id", trainID);
+                        editor.commit();
+
+                        Intent intent = new Intent(LoginActivity.this, DriverActivity.class);
+                        startActivity(intent);
+                    }
+                    finish();
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }

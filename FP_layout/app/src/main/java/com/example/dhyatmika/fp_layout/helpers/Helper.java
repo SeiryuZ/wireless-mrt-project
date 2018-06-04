@@ -1,4 +1,4 @@
-package com.example.dhyatmika.fp_layout;
+package com.example.dhyatmika.fp_layout.helpers;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -8,21 +8,13 @@ import android.graphics.drawable.BitmapDrawable;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
-import com.android.volley.NetworkResponse;
-import com.android.volley.ParseError;
-import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
+import com.example.dhyatmika.fp_layout.R;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,13 +26,14 @@ public final class Helper {
          */
     }
 
-    public static final void toastLong(Context ctx, String message) {
-        Toast toast = Toast.makeText(ctx, message, Toast.LENGTH_LONG);
-        toast.show();
-    }
+    public static final void toast(Context ctx, String message, int length) {
+        Toast toast = null;
 
-    public static final void toastShort(Context ctx, String message) {
-        Toast toast = Toast.makeText(ctx, message, Toast.LENGTH_SHORT);
+        if (length == 0)
+            toast = Toast.makeText(ctx, message, Toast.LENGTH_SHORT);
+        else
+            toast = Toast.makeText(ctx, message, Toast.LENGTH_LONG);
+
         toast.show();
     }
 

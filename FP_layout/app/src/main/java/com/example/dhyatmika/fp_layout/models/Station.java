@@ -1,6 +1,9 @@
 package com.example.dhyatmika.fp_layout.models;
 
-public class Station {
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class Station implements Parcelable {
 
     private int id;
     private String name;
@@ -13,6 +16,25 @@ public class Station {
         this.lat = lat;
         this.lon = lon;
     }
+
+    protected Station(Parcel in) {
+        id = in.readInt();
+        name = in.readString();
+        lat = in.readDouble();
+        lon = in.readDouble();
+    }
+
+    public static final Creator<Station> CREATOR = new Creator<Station>() {
+        @Override
+        public Station createFromParcel(Parcel in) {
+            return new Station(in);
+        }
+
+        @Override
+        public Station[] newArray(int size) {
+            return new Station[size];
+        }
+    };
 
     public int getId() {
         return this.id;
@@ -30,4 +52,16 @@ public class Station {
         return this.lon;
     }
 
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel parcel, int i) {
+        parcel.writeInt(id);
+        parcel.writeString(name);
+        parcel.writeDouble(lat);
+        parcel.writeDouble(lon);
+    }
 }

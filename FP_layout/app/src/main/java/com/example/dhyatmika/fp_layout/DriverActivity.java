@@ -17,6 +17,10 @@ import android.widget.TextView;
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
 import com.android.volley.VolleyError;
+import com.example.dhyatmika.fp_layout.helpers.AppConfig;
+import com.example.dhyatmika.fp_layout.helpers.Helper;
+import com.example.dhyatmika.fp_layout.helpers.VolleyResponseCallback;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -59,6 +63,7 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
         if (token.equals("")) {
             Intent intent = new Intent(this, LoginActivity.class);
             startActivity(intent);
+            finish();
         }
 
         checkTokenValidity();
@@ -85,16 +90,12 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
                 NetworkResponse response = error.networkResponse;
                 //int responseCode = response.statusCode;
 
-                Helper.toastLong(DriverActivity.this, "Token Expired");
-
-                SharedPreferences pref = getPreference();
-                SharedPreferences.Editor editor = pref.edit();
-
-                editor.remove("token");
-                editor.commit();
+                Helper.toast(DriverActivity.this, "Token Expired", 0);
+                deleteToken();
 
                 Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
                 startActivity(intent);
+                finish();
             }
 
             @Override
@@ -119,6 +120,22 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
         });
     }
 
+    public void deleteToken() {
+
+        SharedPreferences pref = getPreference();
+        SharedPreferences.Editor editor = pref.edit();
+
+        editor.remove("token");
+        editor.commit();
+
+        pref = getSharedPreferences("TRAIN", Context.MODE_PRIVATE);
+        editor = pref.edit();
+
+        editor.remove("train_id");
+        editor.commit();
+
+    }
+
     public void logout(View view) {
 
         // get token and URL for logging out
@@ -137,41 +154,30 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
                 // if token has expired
                 if (responseCode == AppConfig.isUnauthorized()) {
 
-                    Helper.toastLong(DriverActivity.this, "Token Expired");
-
-                    SharedPreferences pref = getPreference();
-                    SharedPreferences.Editor editor = pref.edit();
-
-                    editor.remove("token");
-                    editor.commit();
+                    Helper.toast(DriverActivity.this, "Token Expired", 0);
+                    deleteToken();
 
                     Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
                     startActivity(intent);
+                    finish();
                 } else {
-                    String errorBody = new String(response.data);
-
+                    String errorMessage = "Unexpected Error";
                     // and show the error to the user directly using toast
-                    Helper.toastLong(DriverActivity.this, errorBody);
+                    Helper.toast(DriverActivity.this, errorMessage, 0);
                 }
             }
 
             @Override
             public void onResponse(JSONObject response) {
                 try {
-                    Log.v("message", response.toString());
-
                     String message = response.getString("message");
 
-                    SharedPreferences pref = getPreference();
-                    SharedPreferences.Editor editor = pref.edit();
-
-                    editor.remove("token");
-                    editor.commit();
-
-                    Helper.toastLong(DriverActivity.this, "You have logged out.");
+                    deleteToken();
+                    Helper.toast(DriverActivity.this, "You have logged out.", 0);
 
                     Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
                     startActivity(intent);
+                    finish();
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }

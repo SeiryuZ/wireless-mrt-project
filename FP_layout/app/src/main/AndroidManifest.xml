@@ -12,7 +12,6 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
 
-
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -37,7 +36,7 @@
         -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="@string/google_maps_key" />
+            android:value="AIzaSyD5GPyvZz_Pb6a7X3HMkQ4Q75tK15lUDzA" />
 
         <activity
             android:name=".MapsActivity"
@@ -51,7 +50,8 @@
         <activity android:name=".SearchDirection" />
         <activity android:name=".LoginActivity" />
         <activity android:name=".DriverActivity" />
-        <activity android:name=".StationActivity"></activity>
+        <activity android:name=".StationActivity" />
+        <activity android:name=".ChooseTrainActivity"></activity>
     </application>
 
 </manifest>

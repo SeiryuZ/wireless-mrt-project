@@ -1,17 +1,18 @@
 package com.example.dhyatmika.fp_layout;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.Toast;
 
 import com.android.volley.NetworkError;
 import com.android.volley.Request;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
+import com.example.dhyatmika.fp_layout.helpers.AppConfig;
+import com.example.dhyatmika.fp_layout.helpers.Helper;
+import com.example.dhyatmika.fp_layout.helpers.VolleyResponseCallback;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
@@ -89,9 +90,11 @@ public class MapsActivity extends FragmentActivity implements
     public boolean onMarkerClick(final Marker marker) {
 
         // retrieve the data from the marker
-        Integer clickCount = (Integer) marker.getTag();
+        Station station = (Station) marker.getTag();
 
-        Toast.makeText(this, marker.getPosition().toString(), Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, StationActivity.class);
+        intent.putExtra("station", station);
+        startActivity(intent);
 
         // return false to indicate that we have not consumed the event and that we wish
         // for the default behavior to occur (which is for the camera to move such that the
@@ -124,7 +127,7 @@ public class MapsActivity extends FragmentActivity implements
                 else
                     msg = error.getMessage();
 
-                Helper.toastShort(MapsActivity.this, msg);
+                Helper.toast(MapsActivity.this, msg, 0);
             }
 
             @Override
@@ -150,7 +153,7 @@ public class MapsActivity extends FragmentActivity implements
                     onStationsLoaded(result);
                 } catch (JSONException e) {
                     e.printStackTrace();
-                    Helper.toastShort(MapsActivity.this, "An error occurred");
+                    Helper.toast(MapsActivity.this, "An error occurred", 0);
                 }
             }
 
@@ -177,7 +180,7 @@ public class MapsActivity extends FragmentActivity implements
             mMap.addMarker(new MarkerOptions()
                     .position(latlng)
                     .title(curr.getName())
-                    .icon(BitmapDescriptorFactory.fromBitmap(marker)));
+                    .icon(BitmapDescriptorFactory.fromBitmap(marker))).setTag(curr);
         }
 
         Station mid = this.stations.get(stationCount/2);
