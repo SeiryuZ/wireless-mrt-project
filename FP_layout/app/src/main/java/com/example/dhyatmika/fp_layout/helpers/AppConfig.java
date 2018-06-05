@@ -18,6 +18,7 @@ public final class AppConfig {
     private static final String stations = "stations";
     private static final String nearby = "nearby";
     private static final String choose = "choose";
+    private static final String eta = "eta";
     private static final int unauthorized = 401;
     private static final int empty = 204;
 
@@ -63,6 +64,8 @@ public final class AppConfig {
     public static String getStations() {
         return domain + stations;
     }
+
+    public static String getEta(int id) { return domain + eta + '/' + Integer.toString(id); }
 
     public static String getChoose(String token) { return domain + choose + "?token=" + token; }
 

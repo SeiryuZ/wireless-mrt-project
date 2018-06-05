@@ -7,11 +7,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.example.dhyatmika.fp_layout.models.Train;
+
 import java.util.ArrayList;
 
 public class TrainAdapter extends RecyclerView.Adapter<TrainAdapter.TrainViewHolder> {
 
-    ArrayList<String> trainList;
+    ArrayList<Train> trainList;
 
     // inner class that represents the Java object of a single row
     // From here, we bind the elements we have in station_detail to a variable
@@ -31,7 +33,7 @@ public class TrainAdapter extends RecyclerView.Adapter<TrainAdapter.TrainViewHol
         }
     }
 
-    public TrainAdapter(ArrayList<String> trainList) {
+    public TrainAdapter(ArrayList<Train> trainList) {
         // get an arrayList that determines the content of the adapter
         this.trainList = trainList;
     }
@@ -55,9 +57,17 @@ public class TrainAdapter extends RecyclerView.Adapter<TrainAdapter.TrainViewHol
 
         // ----------------------- ATTENTION ----------------------
         // THIS HAS NOT BEEN MODIFIED, PLEASE MODIFY USING TRAIN MODEL
-        holder.trainFromTextView.setText(trainList.get(position));
-        holder.trainToTextView.setText(trainList.get(position));
-        holder.etaTextView.setText(trainList.get(position));
+        Train train = trainList.get(position);
+        int eta = train.getEta();
+        String etaText = "ETA to this station: ";
+
+        holder.trainFromTextView.setText("From: " + train.getLastStation());
+        holder.trainToTextView.setText("To: " + train.getNextStation());
+
+        if (eta > 0)
+            holder.etaTextView.setText(etaText + Integer.toString(eta) + " minute(s)");
+        else
+            holder.etaTextView.setText(etaText + "Arriving in a few seconds");
     }
 
     @Override
