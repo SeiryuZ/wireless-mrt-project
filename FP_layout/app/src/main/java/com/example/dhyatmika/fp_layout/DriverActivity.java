@@ -209,7 +209,10 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
 
         AccelTest.setText(Integer.toString(accelTotal));
 
+        // detect moving and arriving
         if(accelTotal >= 1 && change){
+            // call api here
+            this.toogleTrain();
             if(switcher){
                 indicator.setText("Departing");
             }else{
@@ -227,6 +230,38 @@ public class DriverActivity extends AppCompatActivity implements SensorEventList
             }
             change = true;
         }
+    }
+
+    private void toogleTrain() {
+        String url = AppConfig.getToggle(Helper.getToken(mContext));
+
+        Helper.MakeJsonObjectRequest(mContext, Request.Method.GET, url, null, new VolleyResponseCallback() {
+            @Override
+            public void onError(VolleyError error) {
+                String message = "Unexpected Error. Please logout and login again.";
+                Helper.toast(mContext, message, 0);
+            }
+
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    String message = response.getString("message");
+                    Helper.toast(mContext, message, 0);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    Helper.toast(mContext, "Unexpected Error.", 0);
+                }
+            }
+
+            @Override
+            public HashMap<String, String> setHeaders() {
+                String token = getToken();
+
+                HashMap<String, String> headers = new HashMap<String, String>();
+                headers.put("Authorization", "token " + token);
+                return headers;
+            }
+        });
     }
 
     @Override
