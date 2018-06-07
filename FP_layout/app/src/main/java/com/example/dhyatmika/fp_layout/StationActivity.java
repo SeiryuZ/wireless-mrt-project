@@ -38,6 +38,9 @@ public class StationActivity extends AppCompatActivity {
     private Handler handler = new Handler();
     private final int INTERVAL = 30000;
 
+    private Timer timer = new Timer();
+    private TimerTask timerTask;
+
     // station object
     private volatile Station station;
 
@@ -81,8 +84,7 @@ public class StationActivity extends AppCompatActivity {
     // fetch list of active trains
     private void fetchTrains() {
 
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
+        timerTask = new TimerTask() {
             @Override
             public void run() {
 
@@ -97,7 +99,7 @@ public class StationActivity extends AppCompatActivity {
                             JSONObject data = new JSONObject(responseBody);
                             String message = data.getString("error");
 
-                            Helper.toast(mContext, message, 0);
+                            Helper.toast(mContext, message, 1);
                         } catch(JSONException e) {
                             e.printStackTrace();
                             Helper.toast(mContext, "Unexpected Error", 0);
@@ -139,7 +141,9 @@ public class StationActivity extends AppCompatActivity {
                     }
                 });
             }
-        }, 0, this.INTERVAL);
+        };
+
+        timer.schedule(timerTask, 0, this.INTERVAL);
     }
 
     // on google maps button pressed
@@ -147,5 +151,29 @@ public class StationActivity extends AppCompatActivity {
         String url = AppConfig.getGoogleMapsDestination(this.station);
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         startActivity(intent);
+    }
+
+    @Override
+    public void onBackPressed() {
+        this.killThread();
+        super.onBackPressed();
+    }
+
+    @Override
+    public void onDestroy() {
+        this.killThread();
+        super.onDestroy();
+    }
+
+    private void killThread() {
+        if (timerTask != null) {
+            timerTask.cancel();
+            timerTask = null;
+        }
+
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+        }
     }
 }

@@ -20,6 +20,7 @@ import com.example.dhyatmika.fp_layout.helpers.VolleyResponseCallback;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
 import java.sql.Driver;
 import java.util.HashMap;
 
@@ -69,9 +70,19 @@ public class ChooseTrainActivity extends AppCompatActivity {
         Helper.MakeJsonObjectRequest(mContext, Request.Method.POST, url, body, new VolleyResponseCallback() {
             @Override
             public void onError(VolleyError error) {
-                String message = error.getMessage();
-                Log.v("message", message);
-                Helper.toast(mContext, message, 0);
+                try {
+                    String responseBody = new String(error.networkResponse.data, "UTF-8");
+                    JSONObject data = new JSONObject(responseBody);
+                    String message = data.getString("error");
+
+                    Helper.toast(mContext, message, 1);
+                } catch(JSONException e) {
+                    e.printStackTrace();
+                    Helper.toast(mContext, "Unexpected Error", 0);
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                    Helper.toast(mContext, "Unexpected Error", 0);
+                }
             }
 
             @Override
