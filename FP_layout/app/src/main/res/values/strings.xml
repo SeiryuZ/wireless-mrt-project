@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FP_layout</string>
+    <string name="app_name">MRT Tracker</string>
     <string name="title_activity_maps">Map</string>
     <string name="title_activity_nearby_map">Map</string>
     <string name="title_activity_directions_map">Map</string>
