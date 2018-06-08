@@ -94,6 +94,10 @@ public class NearbyMap extends FragmentActivity implements OnMapReadyCallback {
                     LatLng loc = new LatLng(lat, lon);
 
                     if(marker != null){
+<<<<<<< Updated upstream
+=======
+                        Log.i("TEST", "REMOVE MARKER");
+>>>>>>> Stashed changes
                         marker.remove();
                     }
                     marker = mMap.addMarker(new MarkerOptions().title("You Are Here").position(loc));
