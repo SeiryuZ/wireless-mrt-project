@@ -11,16 +11,16 @@ import android.widget.Toast;
 
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
+import com.example.dhyatmika.fp_layout.helpers.AppConfig;
+import com.example.dhyatmika.fp_layout.helpers.Helper;
+import com.example.dhyatmika.fp_layout.helpers.VolleyResponseCallback;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.sql.Driver;
+import java.util.HashMap;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -28,10 +28,14 @@ public class LoginActivity extends AppCompatActivity {
     private EditText email;
     private EditText password;
 
+    private Context mContext;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        mContext = getApplicationContext();
 
         // Bind layout elements to variables
         email = findViewById(R.id.emailTextView);
@@ -41,8 +45,17 @@ public class LoginActivity extends AppCompatActivity {
         // and check whether we have token saved in or not
         SharedPreferences preference = getSharedPreferences("LOGIN_CREDENTIALS", Context.MODE_PRIVATE);
         if (preference.getString("token", "") != "") {
-            Intent intent = new Intent(this, DriverActivity.class);
-            startActivity(intent);
+            preference = getSharedPreferences("TRAIN", Context.MODE_PRIVATE);
+            if (preference.getInt("train_id", 0) != 0) {
+                Helper.toast(mContext, "Welcome Back", 0);
+                Intent intent = new Intent(this, DriverActivity.class);
+                startActivity(intent);
+            } else {
+                Helper.toast(mContext, "Please enter Train ID to continue", 0);
+                Intent intent = new Intent(this, ChooseTrainActivity.class);
+                startActivity(intent);
+            }
+            finish();
         }
     }
 
@@ -60,63 +73,73 @@ public class LoginActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        // Make a new request, we use JsonObjectRequest because we are sending JSON and expecting JSON back
-        // If you'd rather get a raw string back, use StringRequest
-        //
-        // In the initialization, we also create an anonymous instance of
-        // Response.Listener and Response.ErrorListener
-        JsonObjectRequest jsObjRequest = new JsonObjectRequest
-                (Request.Method.POST, url, body, new Response.Listener<JSONObject>() {
+        // make HTTP Request to login
+        Helper.MakeJsonObjectRequest(mContext, Request.Method.POST, url, body, new VolleyResponseCallback() {
+            @Override
+            public void onError(VolleyError error) {
 
-                    // if response is HTTP 200 OK
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            // Save this sessionKey in UserPreference
-                            String token = response.getString("token");
+                // For now just parse the response body
+                NetworkResponse response = error.networkResponse;
+                String errorBody = new String(response.data);
 
-                            // Get shared preference object, and get the editor object
-                            // And store relevant information
-                            SharedPreferences preferences = getSharedPreferences("LOGIN_CREDENTIALS", Context.MODE_PRIVATE);
-                            SharedPreferences.Editor editor = preferences.edit();
+                // and show the error to the user directly using toast
+                Toast toast = Toast.makeText(LoginActivity.this, errorBody, Toast.LENGTH_LONG);
+                toast.show();
+            }
 
-                            // Also save the active user name
-                            editor.putString("token", token);
-                            editor.commit();
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    // Save this sessionKey in UserPreference
+                    String token = response.getString("token");
 
-                            Toast toast = Toast.makeText(
-                                    LoginActivity.this,
-                                    "Login Successful!",
-                                    Toast.LENGTH_LONG
+                    // Get shared preference object, and get the editor object
+                    // And store relevant information
+                    SharedPreferences preferences = getSharedPreferences("LOGIN_CREDENTIALS", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = preferences.edit();
 
-                            );
-                            toast.show();
+                    // Also save the active user name
+                    editor.putString("token", token);
+                    editor.commit();
 
-                            // Login successful, so we can move to different page
-                            Intent intent = new Intent(LoginActivity.this, DriverActivity.class);
-                            startActivity(intent);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
+                    Toast toast = Toast.makeText(
+                            LoginActivity.this,
+                            "Login Successful!",
+                            Toast.LENGTH_LONG
+
+                    );
+                    toast.show();
+
+                    // Login successful, so we can move to different page
+
+                    if (response.isNull("train")) {
+                        Intent intent = new Intent(LoginActivity.this, ChooseTrainActivity.class);
+                        startActivity(intent);
+                    } else {
+                        JSONObject train = response.getJSONObject("train");
+                        int trainID = train.getInt("id");
+
+                        // Get shared preference object, and get the editor object
+                        // And store relevant information
+                        preferences = getSharedPreferences("TRAIN", Context.MODE_PRIVATE);
+                        editor = preferences.edit();
+
+                        editor.putInt("train_id", trainID);
+                        editor.commit();
+
+                        Intent intent = new Intent(LoginActivity.this, DriverActivity.class);
+                        startActivity(intent);
                     }
-                }, new Response.ErrorListener() {
+                    finish();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
 
-                    // Stuff to do when the server returned an error
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-
-                        // For now just parse the response body
-                        NetworkResponse response = error.networkResponse;
-                        String errorBody = new String(response.data);
-
-                        // and show the error to the user directly using toast
-                        Toast toast = Toast.makeText(LoginActivity.this, errorBody, Toast.LENGTH_LONG);
-                        toast.show();
-                    }
-                });
-        // instantiate basic queue by volley
-        // add our request to the queue
-        RequestQueue queue = Volley.newRequestQueue(this);
-        queue.add(jsObjRequest);
+            @Override
+            public HashMap<String, String> setHeaders() {
+                return null;
+            }
+        });
     }
 }

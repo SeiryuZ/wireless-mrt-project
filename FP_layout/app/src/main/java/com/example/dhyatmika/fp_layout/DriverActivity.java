@@ -3,101 +3,300 @@ package com.example.dhyatmika.fp_layout;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
+import android.widget.Button;
+import android.widget.TextView;
 
-import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
+import com.example.dhyatmika.fp_layout.helpers.AppConfig;
+import com.example.dhyatmika.fp_layout.helpers.Helper;
+import com.example.dhyatmika.fp_layout.helpers.VolleyResponseCallback;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.sql.Driver;
 import java.util.HashMap;
-import java.util.Map;
 
-public class DriverActivity extends AppCompatActivity {
+public class DriverActivity extends AppCompatActivity implements SensorEventListener{
+
+    private Context getContext() {
+        return DriverActivity.this.getApplicationContext();
+    }
+
+    private SharedPreferences getPreference() {
+        return Helper.getPreference(this.getContext());
+    }
+
+    private String getToken() {
+        return Helper.getToken(this.getContext());
+    }
+
+    private SensorManager mSensorManager;
+
+    private Sensor accelerometer;
+
+    private boolean switcher = true;
+    private boolean startStopSwitcher = true;
+    private boolean firstPress = true;
+    private boolean change = true;
+
+    private Context mContext;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver);
 
-        SharedPreferences preference = getSharedPreferences("LOGIN_CREDENTIALS", Context.MODE_PRIVATE);
-        if (preference.getString("token", "").equals("")) {
+        mContext = getApplicationContext();
+        String token = this.getToken();
+        if (token.equals("")) {
             Intent intent = new Intent(this, LoginActivity.class);
             startActivity(intent);
+            finish();
         }
+
+        checkTokenValidity();
+
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+        if(accelerometer == null){
+            //do something
+        }
+    }
+
+    private void checkTokenValidity() {
+
+        // get token
+        String token = this.getToken();
+        String url = AppConfig.getValidate(token);
+
+        Helper.MakeJsonObjectRequest(mContext, Request.Method.GET, url, null, new VolleyResponseCallback() {
+
+            @Override
+            public void onError(VolleyError error) {
+
+                // For now just parse the response body
+                NetworkResponse response = error.networkResponse;
+                //int responseCode = response.statusCode;
+
+                Helper.toast(DriverActivity.this, "Token Expired", 0);
+                deleteToken();
+
+                Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    String message = response.getString("message");
+                    Log.v("message", message);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public HashMap<String, String> setHeaders() {
+                String token = getToken();
+
+                HashMap<String, String> headers = new HashMap<String, String>();
+                headers.put("Authorization", "token " + token);
+                return headers;
+            }
+        });
+    }
+
+    public void deleteToken() {
+
+        SharedPreferences pref = getPreference();
+        SharedPreferences.Editor editor = pref.edit();
+
+        editor.remove("token");
+        editor.commit();
+
+        pref = getSharedPreferences("TRAIN", Context.MODE_PRIVATE);
+        editor = pref.edit();
+
+        editor.remove("train_id");
+        editor.commit();
+
     }
 
     public void logout(View view) {
 
-        // get token for logging out
-        SharedPreferences preference = getSharedPreferences("LOGIN_CREDENTIALS", Context.MODE_PRIVATE);
-        String token = preference.getString("token", "");
-
+        // get token and URL for logging out
+        String token = getToken();
         String url = AppConfig.getLogout(token);
 
         // make request to logout
-        JsonObjectRequest jsObjRequest = new JsonObjectRequest
-                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+        Helper.MakeJsonObjectRequest(mContext, Request.Method.GET, url, null, new VolleyResponseCallback() {
+            @Override
+            public void onError(VolleyError error) {
 
-                    // if response is HTTP 200 OK
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            String message = response.getString("message");
+                // For now just parse the response body
+                NetworkResponse response = error.networkResponse;
+                int responseCode = response.statusCode;
 
-                            SharedPreferences pref = getSharedPreferences("LOGIN_CREDENTIALS", Context.MODE_PRIVATE);
-                            SharedPreferences.Editor editor = pref.edit();
+                // if token has expired
+                if (responseCode == AppConfig.isUnauthorized()) {
 
-                            editor.remove("token");
-                            editor.commit();
+                    Helper.toast(DriverActivity.this, "Token Expired", 0);
+                    deleteToken();
 
-                            Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
-                            startActivity(intent);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }, new Response.ErrorListener() {
+                    Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    String errorMessage = "Unexpected Error";
+                    // and show the error to the user directly using toast
+                    Helper.toast(DriverActivity.this, errorMessage, 0);
+                }
+            }
 
-                    // stuff to do when server returned an error
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    String message = response.getString("message");
 
-                        // For now just parse the response body
-                        NetworkResponse response = error.networkResponse;
-                        String errorBody = new String(response.data);
+                    deleteToken();
+                    Helper.toast(DriverActivity.this, "You have logged out.", 0);
 
-                        // and show the error to the user directly using toast
-                        Toast toast = Toast.makeText(DriverActivity.this, errorBody, Toast.LENGTH_LONG);
-                        toast.show();
-                    }
-                }) {
+                    Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
+                    startActivity(intent);
+                    finish();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
 
-                    @Override
-                    public Map<String, String> getHeaders() throws AuthFailureError {
-                        SharedPreferences preference = getSharedPreferences("LOGIN_CREDENTIALS", Context.MODE_PRIVATE);
-                        String token = preference.getString("token", "");
+            @Override
+            public HashMap<String, String> setHeaders() {
+                String token = getToken();
 
-                        HashMap<String, String> headers = new HashMap<String, String>();
-                        headers.put("Authorization", "token " + token);
-                        return headers;
-                    }
-                };
-        // instantiate basic queue by volley
-        // add our request to the queue
-        RequestQueue queue = Volley.newRequestQueue(this);
-        queue.add(jsObjRequest);
+                HashMap<String, String> headers = new HashMap<String, String>();
+                headers.put("Authorization", "token " + token);
+                return headers;
+            }
+        });
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+        int accelerationX = (int)sensorEvent.values[0];
+        int accelerationZ = (int)sensorEvent.values[1];
+
+        int accelTotal = (int)Math.pow((Math.pow(accelerationX, 2) + Math.pow(accelerationZ, 2)), 0.5);
+
+        Log.i("Test", Integer.toString(accelerationX));
+        Log.i("Test", Integer.toString(accelerationZ));
+
+        TextView indicator = (TextView)findViewById(R.id.TestIndicator);
+        TextView AccelTest = (TextView)findViewById(R.id.AccelerationTest);
+
+        AccelTest.setText(Integer.toString(accelTotal));
+
+        // detect moving and arriving
+        if(accelTotal >= 1 && change){
+            // call api here
+            this.toogleTrain();
+            if(switcher){
+                indicator.setText("Departing");
+            }else{
+                indicator.setText("Arriving");
+            }
+            switcher = !switcher;
+            change = false;
+        }
+
+        if(accelTotal == 0){
+            if(switcher){
+                indicator.setText("Idle");
+            }else{
+                indicator.setText("Moving");
+            }
+            change = true;
+        }
+    }
+
+    private void toogleTrain() {
+        String url = AppConfig.getToggle(Helper.getToken(mContext));
+
+        Helper.MakeJsonObjectRequest(mContext, Request.Method.GET, url, null, new VolleyResponseCallback() {
+            @Override
+            public void onError(VolleyError error) {
+                String message = "Unexpected Error. Please logout and login again.";
+                Helper.toast(mContext, message, 0);
+            }
+
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    String message = response.getString("message");
+                    Helper.toast(mContext, message, 0);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    Helper.toast(mContext, "Unexpected Error.", 0);
+                }
+            }
+
+            @Override
+            public HashMap<String, String> setHeaders() {
+                String token = getToken();
+
+                HashMap<String, String> headers = new HashMap<String, String>();
+                headers.put("Authorization", "token " + token);
+                return headers;
+            }
+        });
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mSensorManager.unregisterListener(this);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    public void toggleSensor(View view) {
+        Button startStopButton = (Button)findViewById(R.id.stopStartSensor);
+        if(startStopSwitcher){
+            if(firstPress){
+                accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+                mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+                firstPress = false;
+            }else{
+                mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+            }
+            startStopButton.setText("Stop");
+        }else {
+            mSensorManager.unregisterListener(this);
+            startStopButton.setText("Start");
+        }
+
+        startStopSwitcher = !startStopSwitcher;
     }
 }
