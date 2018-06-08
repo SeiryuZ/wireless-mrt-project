@@ -89,13 +89,11 @@ public class NearbyMap extends FragmentActivity implements OnMapReadyCallback {
             public void onLocationChanged(Location location) {
                 if(mMap != null){
 
-                    //Log.i("TEST", "GET LOCATION");
                     lat = location.getLatitude();
                     lon = location.getLongitude();
                     LatLng loc = new LatLng(lat, lon);
 
                     if(marker != null){
-                        //Log.i("TEST", "REMOVE MARKER");
                         marker.remove();
                     }
                     marker = mMap.addMarker(new MarkerOptions().title("You Are Here").position(loc));
